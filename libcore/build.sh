@@ -16,7 +16,7 @@ if [ -z "$GOPATH" ]; then
   GOPATH=$(go env GOPATH)
 fi
 
-export GOBIND="$GOPATH/bin/gobind-matsuri"
+export GOBIND=gobind-matsuri
 "$GOPATH"/bin/gomobile-matsuri bind -v -androidapi 23 -cache "$(realpath $BUILD)" -trimpath -ldflags='-s -w -checklinkname=0' -tags='with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,badlinkname,tfogo_checklinkname0' . || exit 1
 rm -r libcore-sources.jar
 

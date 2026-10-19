@@ -1,7 +1,7 @@
-From 46d231b796199635ae40e6f1fa382661bea4b5b5 Mon Sep 17 00:00:00 2001
-From: armv9 <48624112+arm64v8a@users.noreply.github.com>
-Date: Wed, 26 Feb 2025 12:43:48 +0900
-Subject: [PATCH 4/6] nekoutils: add geoip geosite
+From c899689d83ccd952dd3b4e2425a70a4ffab610aa Mon Sep 17 00:00:00 2001
+From: honglei <jhonglei@gmail.com>
+Date: Mon, 19 Oct 2026 17:14:55 +0800
+Subject: [PATCH 4/5] geodata: preserve Neko legacy database hooks
 
 ---
  nekoutils/srs.go             |  7 +++++++
@@ -23,10 +23,10 @@ index 000000000..a86df58a7
 +
 +var GetGeoSiteHeadlessRules func(name string) ([]option.HeadlessRule, error)
 diff --git a/route/rule/rule_set_local.go b/route/rule/rule_set_local.go
-index ee19cc452..d713ef346 100644
+index 9d5d21e83..4656d25c1 100644
 --- a/route/rule/rule_set_local.go
 +++ b/route/rule/rule_set_local.go
-@@ -12,6 +12,7 @@ import (
+@@ -11,6 +11,7 @@ import (
  	"github.com/sagernet/sing-box/adapter"
  	"github.com/sagernet/sing-box/common/srs"
  	C "github.com/sagernet/sing-box/constant"
@@ -34,7 +34,7 @@ index ee19cc452..d713ef346 100644
  	"github.com/sagernet/sing-box/option"
  	"github.com/sagernet/sing/common"
  	E "github.com/sagernet/sing/common/exceptions"
-@@ -55,6 +56,28 @@ func NewLocalRuleSet(ctx context.Context, logger logger.Logger, options option.R
+@@ -54,6 +55,28 @@ func NewLocalRuleSet(ctx context.Context, logger logger.Logger, tag string, opti
  			return nil, err
  		}
  	} else {
@@ -60,9 +60,6 @@ index ee19cc452..d713ef346 100644
 +			}
 +			return ruleSet, nil
 +		}
- 		filePath := filemanager.BasePath(ctx, options.LocalOptions.Path)
+ 		filePath := filemanager.BasePath(ctx, strings.ReplaceAll(options.LocalOptions.Path, C.RuleSetTagPlaceholder, tag))
  		filePath, _ = filepath.Abs(filePath)
  		err := ruleSet.reloadFile(filePath)
--- 
-2.43.0
-
