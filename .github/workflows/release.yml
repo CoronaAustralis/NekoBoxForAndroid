@@ -94,7 +94,7 @@ jobs:
           key: ${{ runner.os }}-libcore-${{ hashFiles('.github/workflows/*', 'golang_status', 'libcore_status') }}
           fail-on-cache-miss: true
 
-      - name: Gradle cache
+      - name: Gradle Cache
         uses: actions/cache@v4
         with:
           path: |
@@ -109,7 +109,7 @@ jobs:
         with:
           packages: 'platform-tools'
 
-      - name: Install Android build tools
+      - name: Install Android Build Tools
         run: sdkmanager "platforms;android-37.0" "build-tools;36.1.0"
 
       - name: Gradle Build
@@ -119,7 +119,7 @@ jobs:
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           ./run init action gradle
-          ./gradlew app:assembleOssRelease
+          ./gradlew :app:assembleOssRelease --stacktrace
 
       - name: Collect APKs
         run: |
@@ -174,7 +174,11 @@ jobs:
           mv ghr*linux_amd64/ghr .
 
           mkdir -p apks
-          find artifacts -type f -name "*.apk" -exec cp -v {} apks/ \;
+
+          find artifacts \
+            -type f \
+            -name "*.apk" \
+            -exec cp -v {} apks/ \;
 
           if ! find apks -type f -name '*.apk' -print -quit | grep -q .; then
             echo "::error::没有找到可发布的 APK 文件"
@@ -212,7 +216,7 @@ jobs:
           key: ${{ runner.os }}-libcore-${{ hashFiles('.github/workflows/*', 'golang_status', 'libcore_status') }}
           fail-on-cache-miss: true
 
-      - name: Gradle cache
+      - name: Gradle Cache
         uses: actions/cache@v4
         with:
           path: |
@@ -230,8 +234,29 @@ jobs:
         with:
           packages: 'platform-tools'
 
-      - name: Install Android build tools
+      - name: Install Android Build Tools
         run: sdkmanager "platforms;android-37.0" "build-tools;36.1.0"
+
+      - name: Create AAB Gradle Init Script
+        shell: bash
+        run: |
+          cat > "${RUNNER_TEMP}/disable-apk-splits.gradle" <<'EOF'
+          gradle.beforeProject { project ->
+              project.pluginManager.withPlugin("com.android.application") {
+                  def androidComponents =
+                      project.extensions.getByName("androidComponents")
+
+                  androidComponents.finalizeDsl { android ->
+                      android.splits.abi.enable = false
+                      android.splits.density.enable = false
+
+                      project.logger.lifecycle(
+                          "AAB build: disabled APK ABI/density splits for ${project.path}"
+                      )
+                  }
+              }
+          }
+          EOF
 
       - name: Gradle Build
         env:
@@ -239,11 +264,17 @@ jobs:
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           ./run init action gradle
-          ./gradlew bundlePlayRelease
+
+          ./gradlew \
+            --init-script "${RUNNER_TEMP}/disable-apk-splits.gradle" \
+            --no-configuration-cache \
+            :app:clean \
+            :app:bundlePlayRelease \
+            --stacktrace
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: AAB
-          path: app/build/outputs/bundle/playRelease/app-play-release.aab
+          path: app/build/outputs/bundle/playRelease/*.aab
           if-no-files-found: error
