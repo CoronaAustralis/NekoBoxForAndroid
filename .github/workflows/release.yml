@@ -80,6 +80,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Restore signing keystore
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE" ]; then
+            echo "::error::Missing RELEASE_KEYSTORE secret"
+            exit 1
+          fi
+          printf '%s' "$RELEASE_KEYSTORE" | base64 --decode > release.keystore
 
       - name: Golang Status
         run: find buildScript libcore/*.sh | xargs cat | sha1sum > golang_status
